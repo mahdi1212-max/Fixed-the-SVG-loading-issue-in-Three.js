@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I ❤️ three.js</title>
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.145.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #2d3748;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        #scene-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #4a5568;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            background-color: #4299e1;
+            color: #ffffff;
+            font-weight: bold;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+        }
+
+        p {
+            font-size: 1rem;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+  <h1>Test for Mugen87, my good role model</h1>
+  <p>
+    By clicking the button below, the line width will increase, and you can see
+    that the function works correctly.
+  </p>
+  <div id="scene-container"></div>
+  <button id="increase-width-btn">Increase Line Width</button>
+</div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        
+        class SVGLoader {
+            static pointsToStrokeWithBuffers( points, style, arcDivisions, minDistance, vertices, normals, uvs, vertexOffset ) {
+
+                const tempV2_1 = new THREE.Vector2();
+                const tempV2_2 = new THREE.Vector2();
+                const tempV2_3 = new THREE.Vector2();
+                const tempV2_4 = new THREE.Vector2();
+                const tempV2_5 = new THREE.Vector2();
+                const tempV2_6 = new THREE.Vector2();
+                const tempV2_7 = new THREE.Vector2();
+                const lastPointL = new THREE.Vector2();
+                const lastPointR = new THREE.Vector2();
+                const point0L = new THREE.Vector2();
+                const point0R = new THREE.Vector2();
+                const currentPointL = new THREE.Vector2();
+                const currentPointR = new THREE.Vector2();
+                const nextPointL = new THREE.Vector2();
+                const nextPointR = new THREE.Vector2();
+                const innerPoint = new THREE.Vector2();
+                const outerPoint = new THREE.Vector2();
+
+                arcDivisions = arcDivisions !== undefined ? arcDivisions : 12;
+                minDistance = minDistance !== undefined ? minDistance : 0.001;
+                vertexOffset = vertexOffset !== undefined ? vertexOffset : 0;
+
+                points = removeDuplicatedPoints( points );
+
+                const numPoints = points.length;
+
+                if ( numPoints < 2 ) return 0;
+
+                const isClosed = points[ 0 ].equals( points[ numPoints - 1 ] );
+
+                let currentPoint;
+                let previousPoint = points[ 0 ];
+                let nextPoint;
+
+                const strokeWidth2 = style.strokeWidth / 2;
+
+                const deltaU = 1 / ( numPoints - 1 );
+                let u0 = 0, u1;
+
+                let innerSideModified;
+                let joinIsOnLeftSide;
+                let isMiter;
+                let initialJoinIsOnLeftSide = false;
+
+                let numVertices = 0;
+                let currentCoordinate = vertexOffset * 3;
+                let currentCoordinateUV = vertexOffset * 2;
+
+                getNormal( points[ 0 ], points[ 1 ], tempV2_1 ).multiplyScalar( strokeWidth2 );
+                lastPointL.copy( points[ 0 ] ).sub( tempV2_1 );
+                lastPointR.copy( points[ 0 ] ).add( tempV2_1 );
+                point0L.copy( lastPointL );
+                point0R.copy( lastPointR );
+
+                for ( let iPoint = 1; iPoint < numPoints; iPoint ++ ) {
+
+                    currentPoint = points[ iPoint ];
+
+                    if ( iPoint === numPoints - 1 ) {
+                        if ( isClosed ) {
+                            nextPoint = points[ 1 ];
+                        } else nextPoint = undefined;
+                    } else {
+                        nextPoint = points[ iPoint + 1 ];
+                    }
+
+                    const normal1 = tempV2_1;
+                    getNormal( previousPoint, currentPoint, normal1 );
+
+                    tempV2_3.copy( normal1 ).multiplyScalar( strokeWidth2 );
+                    currentPointL.copy( currentPoint ).sub( tempV2_3 );
+                    currentPointR.copy( currentPoint ).add( tempV2_3 );
+
+                    u1 = u0 + deltaU;
+
+                    innerSideModified = false;
+
+                    if ( nextPoint !== undefined ) {
+
+                        getNormal( currentPoint, nextPoint, tempV2_2 );
+
+                        tempV2_3.copy( tempV2_2 ).multiplyScalar( strokeWidth2 );
+                        nextPointL.copy( currentPoint ).sub( tempV2_3 );
+                        nextPointR.copy( currentPoint ).add( tempV2_3 );
+
+                        joinIsOnLeftSide = true;
+                        tempV2_3.subVectors( nextPoint, previousPoint );
+                        if ( normal1.dot( tempV2_3 ) < 0 ) {
+                            joinIsOnLeftSide = false;
+                        }
+
+                        if ( iPoint === 1 ) initialJoinIsOnLeftSide = joinIsOnLeftSide;
+
+                        tempV2_3.subVectors( nextPoint, currentPoint );
+                        tempV2_3.normalize();
+                        const dot = Math.abs( normal1.dot( tempV2_3 ) );
+
+                        // Fix: If angle is too sharp (dot product is near zero), fallback to bevel join
+                        if (dot < 0.001) {
+                            makeSegmentWithBevelJoin( joinIsOnLeftSide, innerSideModified, u1 );
+                        } else if ( dot > Number.EPSILON ) {
+                            
+                            const miterSide = strokeWidth2 / dot;
+                            tempV2_3.multiplyScalar( - miterSide );
+                            tempV2_4.subVectors( currentPoint, previousPoint );
+                            tempV2_5.copy( tempV2_4 ).setLength( miterSide ).add( tempV2_3 );
+                            innerPoint.copy( tempV2_5 ).negate();
+                            const miterLength2 = tempV2_5.length();
+                            const segmentLengthPrev = tempV2_4.length();
+                            tempV2_4.divideScalar( segmentLengthPrev );
+                            tempV2_6.subVectors( nextPoint, currentPoint );
+                            const segmentLengthNext = tempV2_6.length();
+                            tempV2_6.divideScalar( segmentLengthNext );
+                            if ( tempV2_4.dot( innerPoint ) < segmentLengthPrev && tempV2_6.dot( innerPoint ) < segmentLengthNext ) {
+                                innerSideModified = true;
+                            }
+
+                            outerPoint.copy( tempV2_5 ).add( currentPoint );
+                            innerPoint.add( currentPoint );
+
+                            isMiter = false;
+
+                            if ( innerSideModified ) {
+                                if ( joinIsOnLeftSide ) {
+                                    nextPointR.copy( innerPoint );
+                                    currentPointR.copy( innerPoint );
+                                } else {
+                                    nextPointL.copy( innerPoint );
+                                    currentPointL.copy( innerPoint );
+                                }
+                            } else {
+                                makeSegmentTriangles();
+                            }
+
+                            switch ( style.strokeLineJoin ) {
+                                case 'bevel':
+                                    makeSegmentWithBevelJoin( joinIsOnLeftSide, innerSideModified, u1 );
+                                    break;
+                                case 'round':
+                                    createSegmentTrianglesWithMiddleSection( joinIsOnLeftSide, innerSideModified );
+                                    if ( joinIsOnLeftSide ) {
+                                        makeCircularSector( currentPoint, currentPointL, nextPointL, u1, 0 );
+                                    } else {
+                                        makeCircularSector( currentPoint, nextPointR, currentPointR, u1, 1 );
+                                    }
+                                    break;
+                                case 'miter':
+                                case 'miter-clip':
+                                default:
+                                    const miterFraction = ( strokeWidth2 * style.strokeMiterLimit ) / miterLength2;
+
+                                    if ( miterFraction < 1 ) {
+                                        if ( style.strokeLineJoin !== 'miter-clip' ) {
+                                            makeSegmentWithBevelJoin( joinIsOnLeftSide, innerSideModified, u1 );
+                                            break;
+                                        } else {
+                                            createSegmentTrianglesWithMiddleSection( joinIsOnLeftSide, innerSideModified );
+                                            if ( joinIsOnLeftSide ) {
+                                                tempV2_6.subVectors( outerPoint, currentPointL ).multiplyScalar( miterFraction ).add( currentPointL );
+                                                tempV2_7.subVectors( outerPoint, nextPointL ).multiplyScalar( miterFraction ).add( nextPointL );
+                                                addVertex( currentPointL, u1, 0 );
+                                                addVertex( tempV2_6, u1, 0 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( tempV2_6, u1, 0 );
+                                                addVertex( tempV2_7, u1, 0 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( tempV2_7, u1, 0 );
+                                                addVertex( nextPointL, u1, 0 );
+                                            } else {
+                                                tempV2_6.subVectors( outerPoint, currentPointR ).multiplyScalar( miterFraction ).add( currentPointR );
+                                                tempV2_7.subVectors( outerPoint, nextPointR ).multiplyScalar( miterFraction ).add( nextPointR );
+                                                addVertex( currentPointR, u1, 1 );
+                                                addVertex( tempV2_6, u1, 1 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( tempV2_6, u1, 1 );
+                                                addVertex( tempV2_7, u1, 1 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( tempV2_7, u1, 1 );
+                                                addVertex( nextPointR, u1, 1 );
+                                            }
+                                        }
+                                    } else {
+                                        if ( innerSideModified ) {
+                                            if ( joinIsOnLeftSide ) {
+                                                addVertex( lastPointR, u0, 1 );
+                                                addVertex( lastPointL, u0, 0 );
+                                                addVertex( outerPoint, u1, 0 );
+                                                addVertex( lastPointR, u0, 1 );
+                                                addVertex( outerPoint, u1, 0 );
+                                                addVertex( innerPoint, u1, 1 );
+                                            } else {
+                                                addVertex( lastPointR, u0, 1 );
+                                                addVertex( lastPointL, u0, 0 );
+                                                addVertex( outerPoint, u1, 1 );
+                                                addVertex( lastPointL, u0, 0 );
+                                                addVertex( innerPoint, u1, 0 );
+                                                addVertex( outerPoint, u1, 1 );
+                                            }
+                                            if ( joinIsOnLeftSide ) {
+                                                nextPointL.copy( outerPoint );
+                                            } else {
+                                                nextPointR.copy( outerPoint );
+                                            }
+                                        } else {
+                                            if ( joinIsOnLeftSide ) {
+                                                addVertex( currentPointL, u1, 0 );
+                                                addVertex( outerPoint, u1, 0 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( outerPoint, u1, 0 );
+                                                addVertex( nextPointL, u1, 0 );
+                                            } else {
+                                                addVertex( currentPointR, u1, 1 );
+                                                addVertex( outerPoint, u1, 1 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( currentPoint, u1, 0.5 );
+                                                addVertex( outerPoint, u1, 1 );
+                                                addVertex( nextPointR, u1, 1 );
+                                            }
+                                        }
+                                        isMiter = true;
+                                    }
+                                    break;
+                            }
+                        } else {
+                            makeSegmentTriangles();
+                        }
+                    } else {
+                        makeSegmentTriangles();
+                    }
+
+                    if ( ! isClosed && iPoint === numPoints - 1 ) {
+                        addCapGeometry( points[ 0 ], point0L, point0R, joinIsOnLeftSide, true, u0 );
+                    }
+
+                    u0 = u1;
+                    previousPoint = currentPoint;
+                    lastPointL.copy( nextPointL );
+                    lastPointR.copy( nextPointR );
+                }
+
+                if ( ! isClosed ) {
+                    addCapGeometry( currentPoint, currentPointL, currentPointR, joinIsOnLeftSide, false, u1 );
+                } else if ( innerSideModified && vertices ) {
+                    let lastOuter = outerPoint;
+                    let lastInner = innerPoint;
+                    if ( initialJoinIsOnLeftSide !== joinIsOnLeftSide ) {
+                        lastOuter = innerPoint;
+                        lastInner = outerPoint;
+                    }
+                    if ( joinIsOnLeftSide ) {
+                        if ( isMiter || initialJoinIsOnLeftSide ) {
+                            lastInner.toArray( vertices, 0 * 3 );
+                            lastInner.toArray( vertices, 3 * 3 );
+                            if ( isMiter ) {
+                                lastOuter.toArray( vertices, 1 * 3 );
+                            }
+                        }
+                    } else {
+                        if ( isMiter || ! initialJoinIsOnLeftSide ) {
+                            lastInner.toArray( vertices, 1 * 3 );
+                            lastInner.toArray( vertices, 3 * 3 );
+                            if ( isMiter ) {
+                                lastOuter.toArray( vertices, 0 * 3 );
+                            }
+                        }
+                    }
+                }
+
+                return numVertices;
+
+                function getNormal( p1, p2, result ) {
+                    result.subVectors( p2, p1 );
+                    return result.set( - result.y, result.x ).normalize();
+                }
+
+                function addVertex( position, u, v ) {
+                    if ( vertices ) {
+                        vertices[ currentCoordinate ] = position.x;
+                        vertices[ currentCoordinate + 1 ] = position.y;
+                        vertices[ currentCoordinate + 2 ] = 0;
+                        if ( normals ) {
+                            normals[ currentCoordinate ] = 0;
+                            normals[ currentCoordinate + 1 ] = 0;
+                            normals[ currentCoordinate + 2 ] = 1;
+                        }
+                        currentCoordinate += 3;
+                        if ( uvs ) {
+                            uvs[ currentCoordinateUV ] = u;
+                            uvs[ currentCoordinateUV + 1 ] = v;
+                            currentCoordinateUV += 2;
+                        }
+                    }
+                    numVertices += 3;
+                }
+
+                function makeCircularSector( center, p1, p2, u, v ) {
+                    tempV2_1.copy( p1 ).sub( center ).normalize();
+                    tempV2_2.copy( p2 ).sub( center ).normalize();
+                    let angle = Math.PI;
+                    const dot = tempV2_1.dot( tempV2_2 );
+                    if ( Math.abs( dot ) < 1 ) angle = Math.abs( Math.acos( dot ) );
+                    angle /= arcDivisions;
+                    tempV2_3.copy( p1 );
+                    for ( let i = 0, il = arcDivisions - 1; i < il; i ++ ) {
+                        tempV2_4.copy( tempV2_3 ).rotateAround( center, angle );
+                        addVertex( tempV2_3, u, v );
+                        addVertex( tempV2_4, u, v );
+                        addVertex( center, u, 0.5 );
+                        tempV2_3.copy( tempV2_4 );
+                    }
+                    addVertex( tempV2_4, u, v );
+                    addVertex( p2, u, v );
+                    addVertex( center, u, 0.5 );
+                }
+
+                function makeSegmentTriangles() {
+                    addVertex( lastPointR, u0, 1 );
+                    addVertex( lastPointL, u0, 0 );
+                    addVertex( currentPointL, u1, 0 );
+                    addVertex( lastPointR, u0, 1 );
+                    addVertex( currentPointL, u1, 0 );
+                    addVertex( currentPointR, u1, 1 );
+                }
+
+                function makeSegmentWithBevelJoin( joinIsOnLeftSide, innerSideModified, u ) {
+                    if ( innerSideModified ) {
+                        if ( joinIsOnLeftSide ) {
+                            addVertex( lastPointR, u0, 1 );
+                            addVertex( lastPointL, u0, 0 );
+                            addVertex( currentPointL, u1, 0 );
+                            addVertex( lastPointR, u0, 1 );
+                            addVertex( currentPointL, u1, 0 );
+                            addVertex( innerPoint, u1, 1 );
+                            addVertex( currentPointL, u, 0 );
+                            addVertex( nextPointL, u, 0 );
+                            addVertex( innerPoint, u, 0.5 );
+                        } else {
+                            addVertex( lastPointR, u0, 1 );
+                            addVertex( lastPointL, u0, 0 );
+                            addVertex( currentPointR, u1, 1 );
+                            addVertex( lastPointL, u0, 0 );
+                            addVertex( innerPoint, u1, 0 );
+                            addVertex( currentPointR, u1, 1 );
+                            addVertex( currentPointR, u, 1 );
+                            addVertex( innerPoint, u, 0 );
+                            addVertex( nextPointR, u, 1 );
+                        }
+                    } else {
+                        if ( joinIsOnLeftSide ) {
+                            addVertex( currentPointL, u, 0 );
+                            addVertex( nextPointL, u, 0 );
+                            addVertex( currentPoint, u, 0.5 );
+                        } else {
+                            addVertex( currentPointR, u, 1 );
+                            addVertex( nextPointR, u, 0 );
+                            addVertex( currentPoint, u, 0.5 );
+                        }
+                    }
+                }
+
+                function createSegmentTrianglesWithMiddleSection( joinIsOnLeftSide, innerSideModified ) {
+                    if ( innerSideModified ) {
+                        if ( joinIsOnLeftSide ) {
+                            addVertex( lastPointR, u0, 1 );
+                            addVertex( lastPointL, u0, 0 );
+                            addVertex( currentPointL, u1, 0 );
+                            addVertex( lastPointR, u0, 1 );
+                            addVertex( currentPointL, u1, 0 );
+                            addVertex( innerPoint, u1, 1 );
+                            addVertex( currentPointL, u0, 0 );
+                            addVertex( currentPoint, u1, 0.5 );
+                            addVertex( innerPoint, u1, 1 );
+                            addVertex( currentPoint, u1, 0.5 );
+                            addVertex( nextPointL, u0, 0 );
+                            addVertex( innerPoint, u1, 1 );
+                        } else {
+                            addVertex( lastPointR, u0, 1 );
+                            addVertex( lastPointL, u0, 0 );
+                            addVertex( currentPointR, u1, 1 );
+                            addVertex( lastPointL, u0, 0 );
+                            addVertex( innerPoint, u1, 0 );
+                            addVertex( currentPointR, u1, 1 );
+                            addVertex( currentPointR, u0, 1 );
+                            addVertex( innerPoint, u1, 0 );
+                            addVertex( currentPoint, u1, 0.5 );
+                            addVertex( currentPoint, u1, 0.5 );
+                            addVertex( innerPoint, u1, 0 );
+                            addVertex( nextPointR, u0, 1 );
+                        }
+                    }
+                }
+
+                function addCapGeometry( center, p1, p2, joinIsOnLeftSide, start, u ) {
+                    switch ( style.strokeLineCap ) {
+                        case 'round':
+                            if ( start ) {
+                                makeCircularSector( center, p2, p1, u, 0.5 );
+                            } else {
+                                makeCircularSector( center, p1, p2, u, 0.5 );
+                            }
+                            break;
+                        case 'square':
+                            if ( start ) {
+                                tempV2_1.subVectors( p1, center );
+                                tempV2_2.set( tempV2_1.y, - tempV2_1.x );
+                                tempV2_3.addVectors( tempV2_1, tempV2_2 ).add( center );
+                                tempV2_4.subVectors( tempV2_2, tempV2_1 ).add( center );
+                                if ( joinIsOnLeftSide ) {
+                                    tempV2_3.toArray( vertices, 1 * 3 );
+                                    tempV2_4.toArray( vertices, 0 * 3 );
+                                    tempV2_4.toArray( vertices, 3 * 3 );
+                                } else {
+                                    tempV2_3.toArray( vertices, 1 * 3 );
+                                    uvs[ 3 * 2 + 1 ] === 1 ? tempV2_4.toArray( vertices, 3 * 3 ) : tempV2_3.toArray( vertices, 3 * 3 );
+                                    tempV2_4.toArray( vertices, 0 * 3 );
+                                }
+                            } else {
+                                tempV2_1.subVectors( p2, center );
+                                tempV2_2.set( tempV2_1.y, - tempV2_1.x );
+                                tempV2_3.addVectors( tempV2_1, tempV2_2 ).add( center );
+                                tempV2_4.subVectors( tempV2_2, tempV2_1 ).add( center );
+                                const vl = vertices.length;
+                                if ( joinIsOnLeftSide ) {
+                                    tempV2_3.toArray( vertices, vl - 1 * 3 );
+                                    tempV2_4.toArray( vertices, vl - 2 * 3 );
+                                    tempV2_4.toArray( vertices, vl - 4 * 3 );
+                                } else {
+                                    tempV2_4.toArray( vertices, vl - 2 * 3 );
+                                    tempV2_3.toArray( vertices, vl - 1 * 3 );
+                                    tempV2_4.toArray( vertices, vl - 4 * 3 );
+                                }
+                            }
+                            break;
+                        case 'butt':
+                        default:
+                            break;
+                    }
+                }
+
+                function removeDuplicatedPoints( points ) {
+                    let dupPoints = false;
+                    for ( let i = 1, n = points.length - 1; i < n; i ++ ) {
+                        if ( points[ i ].distanceTo( points[ i + 1 ] ) < minDistance ) {
+                            dupPoints = true;
+                            break;
+                        }
+                    }
+                    if ( ! dupPoints ) return points;
+                    const newPoints = [];
+                    newPoints.push( points[ 0 ] );
+                    for ( let i = 1, n = points.length - 1; i < n; i ++ ) {
+                        if ( points[ i ].distanceTo( points[ i + 1 ] ) >= minDistance ) {
+                            newPoints.push( points[ i ] );
+                        }
+                    }
+                    newPoints.push( points[ points.length - 1 ] );
+                    return newPoints;
+                }
+            }
+        }
+        
+        // --- کد تست اصلی ---
+        
+        const sceneContainer = document.getElementById('scene-container');
+        const width = sceneContainer.clientWidth;
+        const height = sceneContainer.clientHeight;
+        
+        let scene, camera, renderer, lineMesh;
+        let strokeWidth = 10;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 1, 1000);
+            camera.position.z = 500;
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            sceneContainer.appendChild(renderer.domElement);
+            
+            window.addEventListener('resize', onWindowResize, false);
+            document.getElementById('increase-width-btn').addEventListener('click', increaseWidth);
+
+            drawSVGLine();
+        }
+
+        function drawSVGLine() {
+            if (lineMesh) {
+                scene.remove(lineMesh);
+                lineMesh.geometry.dispose();
+                lineMesh.material.dispose();
+            }
+
+            const points = [
+                new THREE.Vector2(-200, 50),
+                new THREE.Vector2(-100, -50),
+                new THREE.Vector2(0, 50),
+                new THREE.Vector2(100, -50),
+                new THREE.Vector2(200, 50)
+            ];
+
+            const style = {
+                strokeWidth: strokeWidth,
+                strokeLineJoin: 'miter',
+                strokeLineCap: 'round',
+                strokeMiterLimit: 10
+            };
+            
+            const numVertices = SVGLoader.pointsToStrokeWithBuffers(points, style);
+            
+            const vertices = new Float32Array(numVertices);
+            const normals = new Float32Array(numVertices);
+            const uvs = new Float32Array(numVertices / 3 * 2);
+
+            SVGLoader.pointsToStrokeWithBuffers(points, style, 12, 0.001, vertices, normals, uvs, 0);
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
+            const material = new THREE.MeshBasicMaterial({ color: 0xffa500, side: THREE.DoubleSide });
+
+            lineMesh = new THREE.Mesh(geometry, material);
+            scene.add(lineMesh);
+        }
+
+        function increaseWidth() {
+            strokeWidth += 20;
+            drawSVGLine();
+        }
+
+        function onWindowResize() {
+            const containerWidth = sceneContainer.clientWidth;
+            const containerHeight = sceneContainer.clientHeight;
+            camera.left = containerWidth / -2;
+            camera.right = containerWidth / 2;
+            camera.top = containerHeight / 2;
+            camera.bottom = containerHeight / -2;
+            camera.updateProjectionMatrix();
+            renderer.setSize(containerWidth, containerHeight);
+        }
+
+        init();
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
